@@ -5,14 +5,15 @@ IOU_THRESHOLD = .5
 
 
 class TrashItem:
-
-    def __init__(self, x, y, width, height, trash_type, conf):
+    # TODO add updated bool & set trash items that've been updated to not be updated by yolo
+    def __init__(self, x, y, width, height, trash_type, conf, updated):
         self.x = x
         self.y = y
         self.width = width
         self.height = height
         self.trash_type = trash_type
         self.conf = conf
+        self.updated = updated
         # self.pose = Pose()
 
     def compare_item(self, new_item):
