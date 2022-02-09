@@ -64,9 +64,9 @@ class DLabel(QLabel):
         elif(type == 1):
             pn = QPen(QColor(255, 255, 0, opacity), thickness, Qt.SolidLine)
         elif(type == 2):
-            pn = QPen(QColor(255, 0, 137, opacity), thickness, Qt.SolidLine)
+            pn = QPen(QColor(255, 0, 255, opacity), thickness, Qt.SolidLine)
         else:
-            pn = QPen(QColor(31, 242, 255, opacity), thickness, Qt.SolidLine)
+            pn = QPen(QColor(0, 255, 255, opacity), thickness, Qt.SolidLine)
         return pn
 
     def mousePressEvent(self, event):
