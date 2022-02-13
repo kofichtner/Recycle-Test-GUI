@@ -1,30 +1,22 @@
-import sys
-import random as rd
-import numpy as np
-import math
-
-import trash_item
-from camera_node import Camera
-
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 
-import cv2
-
 
 class CreateAnnotationPopUp(QDialog):
-    def __init__(self, x, y):
+    def __init__(self, x, y, global_pos):
         super().__init__()
         self.classes = ['Cardboard', 'Metal', 'Rigid Plastic', 'Soft Plastic']
         self.label = 0
         self.width = 220
         self.height = 150
-        self.left = x + 10
-        self.top = y + 10
+        self.left = global_pos[0]
+        self.top = global_pos[1] - (self.height/2)
+        if(global_pos[2] == -1):
+            self.left -= self.width
 
         QDialog.__init__(self)
-        self.setWindowTitle("Create Annotation")
+        self.setWindowTitle("Create")
         self.setGeometry(self.left, self.top, self.width, self.height)
         verticalLayout = QVBoxLayout(self)
         self.text = QLabel()
@@ -69,7 +61,7 @@ class CreateAnnotationPopUp(QDialog):
 
 
 class EditAnnotationPopUp(QDialog):
-    def __init__(self, trash_item, trash_items):
+    def __init__(self, trash_item, trash_items, global_pos):
         super().__init__()
         self.classes = ['Cardboard', 'Metal', 'Rigid Plastic', 'Soft Plastic']
         self.trash_item = trash_item
@@ -77,13 +69,15 @@ class EditAnnotationPopUp(QDialog):
         self.updated_conf = self.trash_item.conf
         self.updated_label = self.trash_item.trash_type
         self.delete = False
-        self.width = 220
+        self.width = 175
         self.height = 200
-        self.left = trash_item.x + 10
-        self.top = trash_item.y + 10
+        self.left = global_pos[0]
+        self.top = global_pos[1] - (self.height/2)
+        if(global_pos[2] == -1):
+            self.left -= self.width
 
         QDialog.__init__(self)
-        self.setWindowTitle("Edit Annotation")
+        self.setWindowTitle("Edit")
         self.setGeometry(self.left, self.top, self.width, self.height)
         verticalLayout = QVBoxLayout(self)
 
@@ -107,34 +101,26 @@ class EditAnnotationPopUp(QDialog):
         self.c2.toggled.connect(lambda: self.btnstate(self.c2))
         self.c3.toggled.connect(lambda: self.btnstate(self.c3))
 
-        # Create checkbox to boost confidence
-        self.text2 = QLabel()
-        self.text2.setText(
-            'Adjust confidence 0-100%')
-        verticalLayout.addWidget(self.text2)
-        self.slider = QSlider(Qt.Horizontal)
-        self.slider.setMinimum(0)
-        self.slider.setMaximum(100)
-        self.slider.setValue(self.trash_item.conf)
-        # self.slider.setTickPosition(QSlider.TicksBelow)
-        # self.slider.setTickInterval(10)
-        min_label = QLabel(self, alignment=Qt.AlignLeft)
-        min_label.setText("0")
-        max_label = QLabel(self, alignment=Qt.AlignRight)
-        max_label.setText("100")
-        self.slider.valueChanged.connect(self.valuechange)
-        verticalLayout.addWidget(self.slider)
-        slider_hbox = QHBoxLayout()
-        slider_hbox.addWidget(min_label, Qt.AlignLeft)
-        slider_hbox.addWidget(max_label, Qt.AlignRight)
-        slider_hbox.addStretch()
-        verticalLayout.addLayout(slider_hbox)
-
-        # Create checkbox to delete box
-        self.checkBox = QCheckBox(self.tr('Delete annotation'), self)
-        verticalLayout.addWidget(self.checkBox)
-        self.checkBox.toggled.connect(
-            lambda: self.checkboxstate(self.checkBox))
+        # Create slider to boost confidence
+        # self.text2 = QLabel()
+        # self.text2.setText(
+        #     'Adjust confidence 0-100%')
+        # verticalLayout.addWidget(self.text2)
+        # self.slider = QSlider(Qt.Horizontal)
+        # self.slider.setMinimum(0)
+        # self.slider.setMaximum(100)
+        # self.slider.setValue(self.trash_item.conf)
+        # min_label = QLabel(self, alignment=Qt.AlignLeft)
+        # min_label.setText("0")
+        # max_label = QLabel(self, alignment=Qt.AlignRight)
+        # max_label.setText("100")
+        # self.slider.valueChanged.connect(self.valuechange)
+        # verticalLayout.addWidget(self.slider)
+        # slider_hbox = QHBoxLayout()
+        # slider_hbox.addWidget(min_label, Qt.AlignLeft)
+        # slider_hbox.addWidget(max_label, Qt.AlignRight)
+        # slider_hbox.addStretch()
+        # verticalLayout.addLayout(slider_hbox)
 
         buttonBox = QDialogButtonBox(self)
         buttonBox.setStandardButtons(
@@ -142,6 +128,18 @@ class EditAnnotationPopUp(QDialog):
         verticalLayout.addWidget(buttonBox)
         buttonBox.accepted.connect(self.accept)
         buttonBox.rejected.connect(self.reject)
+
+        self.boost_btn = QPushButton("Boost Confidence")
+        self.boost_shortcut = QShortcut(QKeySequence('b'), self)
+        self.boost_shortcut.activated.connect(self.shortcutboost)
+        self.boost_btn.clicked.connect(self.btnboost)
+        verticalLayout.addWidget(self.boost_btn)
+
+        self.delete_btn = QPushButton("Delete")
+        self.delete_shortcut = QShortcut(QKeySequence('Delete'), self)
+        self.delete_shortcut.activated.connect(self.shortcutdelete)
+        self.delete_btn.clicked.connect(self.btndelete)
+        verticalLayout.addWidget(self.delete_btn)
         self.initEditAnnot()
 
     def initEditAnnot(self):
@@ -158,8 +156,21 @@ class EditAnnotationPopUp(QDialog):
         if b.isChecked() == True:
             self.updated_label = self.classes.index(b.text())
 
-    def checkboxstate(self, b):
-        self.delete = b.isChecked()
-
     def valuechange(self):
         self.updated_conf = self.slider.value()
+
+    def btndelete(self, b):
+        self.delete = True
+        self.accept()
+
+    def shortcutdelete(self):
+        self.delete = True
+        self.accept()
+
+    def btnboost(self, b):
+        self.updated_conf = 100
+        self.accept()
+
+    def shortcutboost(self):
+        self.updated_conf = 100
+        self.accept()
